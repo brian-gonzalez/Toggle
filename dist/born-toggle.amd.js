@@ -78,6 +78,7 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 this._setupCallbacks(trigger);
                 this._setupMethods(trigger);
                 this._setupHandlers(trigger);
+                this._setupCustomAttributes(trigger);
 
                 if (trigger.toggle.options.auto) {
                     if (!isNaN(trigger.toggle.options.auto)) {
@@ -134,6 +135,40 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 return triggerOptions;
             }
         }, {
+            key: '_setupCustomAttributes',
+            value: function _setupCustomAttributes(trigger) {
+                var triggerID = trigger.id || Toggle.generateCustomToggleID(trigger),
+                    targetID = trigger.toggle.targetEl.id || triggerID + '--target',
+
+                //`value`: [String | Array] If Array, index 0 is used when Toggle is unset, and index 1 is used when it's set.
+                //`trigger`: [Boolean] Set to true to only attach the attribute to the trigger element.
+                //`target`: [Boolean] Set to true to only attach the attribute to the target element.
+                defaultAttributes = {
+                    'aria-expanded': {
+                        value: ['false', 'true']
+                    },
+                    'aria-describedby': {
+                        value: triggerID,
+                        target: true
+                    },
+                    'aria-controls': {
+                        value: targetID,
+                        trigger: true
+                    },
+                    'aria-haspopup': {
+                        value: 'true',
+                        trigger: true
+                    }
+                };
+
+                trigger.id = triggerID;
+                trigger.toggle.targetEl.id = targetID;
+
+                trigger.toggle.options.customAttributes = (0, _bornUtilities.objectAssign)(defaultAttributes, trigger.toggle.options.customAttributes);
+
+                Toggle.updateAttributes(trigger);
+            }
+        }, {
             key: '_getParent',
             value: function _getParent(trigger) {
                 return trigger.closest(trigger.toggle.options.parent) || document.querySelector(trigger.toggle.options.parent) || trigger.parentNode;
@@ -182,6 +217,36 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 }.bind(this));
             }
         }], [{
+            key: 'generateCustomToggleID',
+            value: function generateCustomToggleID(trigger) {
+                var randomString = Math.floor(new Date().getTime() * Math.random()).toString().substr(0, 4);
+
+                return 'toggleID-' + randomString;
+            }
+        }, {
+            key: 'updateAttributes',
+            value: function updateAttributes(trigger, isActive) {
+                var customAttributes = trigger.toggle.options.customAttributes;
+
+                for (var attrKey in customAttributes) {
+                    if (customAttributes[attrKey].trigger) {
+                        Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
+                    } else if (customAttributes[attrKey].target) {
+                        Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
+                    } else {
+                        Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
+                        Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
+                    }
+                }
+            }
+        }, {
+            key: 'setAttributeValue',
+            value: function setAttributeValue(el, attrName, attrObject, isActive) {
+                var value = typeof attrObject.value === 'string' ? attrObject.value : isActive ? attrObject.value[1] : attrObject.value[0];
+
+                el.setAttribute(attrName, value);
+            }
+        }, {
             key: 'toggleEventHandler',
             value: function toggleEventHandler(evt) {
                 var isTouch = evt.type.indexOf('touch') !== -1;
@@ -220,6 +285,10 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                     trigger.toggle.targetEl.removeEventListener('click', Toggle.closeElCallback);
 
                     trigger.toggle.afterUnset(trigger);
+
+                    trigger.toggle.isSet = false;
+
+                    Toggle.updateAttributes(trigger);
                 }
             }
         }, {
@@ -235,6 +304,10 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                     trigger.classList.add(trigger.toggle.options.activeClass);
                     trigger.toggle.parentEl.classList.add(trigger.toggle.options.activeClass);
                     trigger.toggle.targetEl.classList.add(trigger.toggle.options.activeClass);
+
+                    trigger.toggle.isSet = true;
+
+                    Toggle.updateAttributes(trigger, true);
 
                     //If 'options.persist' is false, attach an event listener to the body to unset the trigger.
                     if (!trigger.toggle.options.persist) {

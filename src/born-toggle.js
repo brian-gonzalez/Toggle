@@ -1,4 +1,4 @@
-import {callbackOnElements, hasURLParameter} from '@borngroup/born-utilities';
+import {callbackOnElements, hasURLParameter, objectAssign} from '@borngroup/born-utilities';
 
 export default class Toggle{
     constructor(options) {
@@ -45,6 +45,7 @@ export default class Toggle{
         this._setupCallbacks(trigger);
         this._setupMethods(trigger);
         this._setupHandlers(trigger);
+        this._setupCustomAttributes(trigger);
 
         if (trigger.toggle.options.auto) {
             if (!isNaN(trigger.toggle.options.auto)) {
@@ -105,6 +106,87 @@ export default class Toggle{
         triggerOptions.unsetSelf        = triggerOptions.hasOwnProperty('unsetSelf') ? triggerOptions.unsetSelf : true;
 
         return triggerOptions;
+    }
+
+    /**
+     * Setup custom attributes for the toggle trigger and the target.
+     * Default to setting a few aria-attributes to give more context to the browser.
+     * @param  {[type]} trigger [description]
+     * @return {[type]}         [description]
+     */
+    _setupCustomAttributes(trigger) {
+        let triggerID = trigger.id || Toggle.generateCustomToggleID(trigger),
+            targetID = trigger.toggle.targetEl.id || `${triggerID}--target`,
+            //`value`: [String | Array] If Array, index 0 is used when Toggle is unset, and index 1 is used when it's set.
+            //`trigger`: [Boolean] Set to true to only attach the attribute to the trigger element.
+            //`target`: [Boolean] Set to true to only attach the attribute to the target element.
+            defaultAttributes = {
+                'aria-expanded': {
+                    value: ['false', 'true']
+                },
+                'aria-describedby': {
+                    value: triggerID,
+                    target: true
+                },
+                'aria-controls': {
+                    value: targetID,
+                    trigger: true
+                },
+                'aria-haspopup': {
+                    value: 'true',
+                    trigger: true
+                }
+            };
+
+        trigger.id = triggerID;
+        trigger.toggle.targetEl.id = targetID;
+
+        trigger.toggle.options.customAttributes = objectAssign(defaultAttributes, trigger.toggle.options.customAttributes);
+
+        Toggle.updateAttributes(trigger);
+    }
+
+    /**
+     * Generate a random toggleID string to be used in the trigger and target elements in case they don't have an ID.
+     * @param  {[type]} trigger [description]
+     * @return {[type]}         [description]
+     */
+    static generateCustomToggleID(trigger) {
+        let randomString = Math.floor(new Date().getTime() * Math.random()).toString().substr(0, 4);
+
+        return `toggleID-${randomString}`;
+    }
+
+    /**
+     * Loop through the `trigger.toggle.options.customAttributes` object and update the configured attributes.
+     * This method is also called whenever the toggle is set or unset, in case the attributes should change.
+     * @param  {[type]}  trigger  [description]
+     * @param  {Boolean} isActive [description]
+     * @return {[type]}           [description]
+     */
+    static updateAttributes(trigger, isActive) {
+        let customAttributes = trigger.toggle.options.customAttributes;
+
+        for (let attrKey in customAttributes) {
+            if (customAttributes[attrKey].trigger) {
+                Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
+            } else if (customAttributes[attrKey].target) {
+                Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
+            } else {
+                Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
+                Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
+            }
+        }
+    }
+
+    /**
+     * Updates a single Toggle element with the custom attributes provided in `attrName` and `attrObject`
+     * Set the `isActive` argument to TRUE to swap the attribute value when `attrObject.value` is an Array.
+     */
+    static setAttributeValue(el, attrName, attrObject, isActive) {
+        let value = typeof attrObject.value === 'string' ? attrObject.value : (isActive ? attrObject.value[1] : attrObject.value[0]);
+
+        el.setAttribute(attrName, value);
     }
 
     /**
@@ -202,6 +284,10 @@ export default class Toggle{
             trigger.toggle.targetEl.removeEventListener('click', Toggle.closeElCallback);
 
             trigger.toggle.afterUnset(trigger);
+
+            trigger.toggle.isSet = false;
+
+            Toggle.updateAttributes(trigger);
         }
     }
 
@@ -223,6 +309,10 @@ export default class Toggle{
             trigger.classList.add(trigger.toggle.options.activeClass);
             trigger.toggle.parentEl.classList.add(trigger.toggle.options.activeClass);
             trigger.toggle.targetEl.classList.add(trigger.toggle.options.activeClass);
+
+            trigger.toggle.isSet = true;
+
+            Toggle.updateAttributes(trigger, true);
 
             //If 'options.persist' is false, attach an event listener to the body to unset the trigger.
             if (!trigger.toggle.options.persist) {
