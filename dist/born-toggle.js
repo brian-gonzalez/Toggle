@@ -64,7 +64,10 @@ var Toggle = function () {
             this._setupCallbacks(trigger);
             this._setupMethods(trigger);
             this._setupHandlers(trigger);
+
             this._setupCustomAttributes(trigger);
+
+            Toggle.updateAttributes(trigger);
 
             if (trigger.toggle.options.auto) {
                 if (!isNaN(trigger.toggle.options.auto)) {
@@ -166,8 +169,6 @@ var Toggle = function () {
             trigger.toggle.targetEl.id = targetID;
 
             trigger.toggle.options.customAttributes = (0, _bornUtilities.objectAssign)(defaultAttributes, trigger.toggle.options.customAttributes);
-
-            Toggle.updateAttributes(trigger);
         }
 
         /**
@@ -268,13 +269,15 @@ var Toggle = function () {
             var customAttributes = trigger.toggle.options.customAttributes;
 
             for (var attrKey in customAttributes) {
-                if (customAttributes[attrKey].trigger) {
-                    Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
-                } else if (customAttributes[attrKey].target) {
-                    Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
-                } else {
-                    Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
-                    Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
+                if (customAttributes[attrKey]) {
+                    if (customAttributes[attrKey].trigger) {
+                        Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
+                    } else if (customAttributes[attrKey].target) {
+                        Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
+                    } else {
+                        Toggle.setAttributeValue(trigger, attrKey, customAttributes[attrKey], isActive);
+                        Toggle.setAttributeValue(trigger.toggle.targetEl, attrKey, customAttributes[attrKey], isActive);
+                    }
                 }
             }
         }
