@@ -27,12 +27,14 @@ export default class Toggle{
      * Sets up individual 'trigger' functionality.
      */
     _setupTrigger(trigger) {
+        let triggerID = trigger.id || this.generateCustomToggleID(trigger);
 
         trigger.toggle = trigger.toggle || {};
 
         trigger.toggle.options = this._getOptions(trigger);
         trigger.toggle.parentEl = this._getParent(trigger);
         trigger.toggle.targetEl = this._getTarget(trigger);
+        trigger.toggle.targetFocusEl = this._getTargetFocus(trigger);
 
         if (!trigger.toggle.targetEl) {
             console.warn('No target provided or element not found for: ', trigger);
@@ -40,13 +42,20 @@ export default class Toggle{
             return false;
         }
 
+        trigger.id = triggerID;
+        trigger.toggle.targetEl.id = trigger.toggle.targetEl.id || `${triggerID}--target`;
+
+        trigger.toggle.options.customAttributes = objectAssign(this.getCustomAttributes(trigger), trigger.toggle.options.customAttributes);
+
+        //Set an initial tabindex on the target trigger if none is present.
+        trigger.toggle.targetEl.tabIndex = trigger.toggle.targetEl.tabIndex || -1;
+
+        //Is this necessary?
         trigger.toggle.targetEl.toggleTrigger = trigger;
 
         this._setupCallbacks(trigger);
         this._setupMethods(trigger);
         this._setupHandlers(trigger);
-
-        this._setupCustomAttributes(trigger);
 
         Toggle.updateAttributes(trigger);
 
@@ -81,32 +90,29 @@ export default class Toggle{
     }
 
     /**
+     * Generate a random toggleID string to be used in the trigger and target elements in case they don't have an ID.
+     * @param  {[type]} trigger [description]
+     * @return {[type]}         [description]
+     */
+    generateCustomToggleID(trigger) {
+        let randomString = Math.floor(new Date().getTime() * Math.random()).toString().substr(0, 4);
+
+        return `toggleID-${randomString}`;
+    }
+
+    /**
      * Gets the trigger's settings from its data-* attribute.
      * Attempts to add missing properties if needed.
      * @param  {[Node]} trigger: HTML element which functions as the toggle.
      */
     _getOptions(trigger) {
-        let triggerOptions = {};
+        let triggerOptionsString = trigger.getAttribute(this.options.dataAttribute),
+            triggerOptions = objectAssign({}, this.options, triggerOptionsString ? JSON.parse(triggerOptionsString) : {});
 
-        triggerOptions = trigger.getAttribute(this.options.dataAttribute) ? JSON.parse(trigger.getAttribute(this.options.dataAttribute)) : {};
-
-        //Merges data-* options and properties passed on the 'this.options' object.
-        for (let option in this.options) {
-            //Skip the 'triggers' and 'dataAttribute' properties cause we don't need 'em.
-            if (option === 'triggers' || option === 'dataAttribute') {
-                continue;
-            }
-
-            //If the data-* attribute didn't have an option that was set on the 'this.options' object,
-            //add it to the triggerOptions object.
-            if (!triggerOptions.hasOwnProperty(option)) {
-                triggerOptions[option] = this.options[option];
-            }
-        }
-
-        triggerOptions.closeSelector    = triggerOptions.closeSelector || '[data-toggle-close]';
-        triggerOptions.activeClass      = triggerOptions.activeClass || 'toggle--active';
-        triggerOptions.unsetSelf        = triggerOptions.hasOwnProperty('unsetSelf') ? triggerOptions.unsetSelf : true;
+        triggerOptions.closeSelector = triggerOptions.closeSelector || '[data-toggle-close]';
+        triggerOptions.activeClass = triggerOptions.activeClass || 'toggle--active';
+        triggerOptions.unsetSelf = triggerOptions.hasOwnProperty('unsetSelf') ? triggerOptions.unsetSelf : true;
+        triggerOptions.allowEscClose = triggerOptions.hasOwnProperty('allowEscClose') ? triggerOptions.allowEscClose : true;
 
         return triggerOptions;
     }
@@ -117,45 +123,27 @@ export default class Toggle{
      * @param  {[type]} trigger [description]
      * @return {[type]}         [description]
      */
-    _setupCustomAttributes(trigger) {
-        let triggerID = trigger.id || Toggle.generateCustomToggleID(trigger),
-            targetID = trigger.toggle.targetEl.id || `${triggerID}--target`,
-            //`value`: [String | Array] If Array, index 0 is used when Toggle is unset, and index 1 is used when it's set.
-            //`trigger`: [Boolean] Set to true to only attach the attribute to the trigger element.
-            //`target`: [Boolean] Set to true to only attach the attribute to the target element.
-            defaultAttributes = {
-                'aria-expanded': {
-                    value: ['false', 'true']
-                },
-                'aria-describedby': {
-                    value: triggerID,
-                    target: true
-                },
-                'aria-controls': {
-                    value: targetID,
-                    trigger: true
-                },
-                'aria-haspopup': {
-                    value: 'true',
-                    trigger: true
-                }
-            };
-
-        trigger.id = triggerID;
-        trigger.toggle.targetEl.id = targetID;
-
-        trigger.toggle.options.customAttributes = objectAssign(defaultAttributes, trigger.toggle.options.customAttributes);
-    }
-
-    /**
-     * Generate a random toggleID string to be used in the trigger and target elements in case they don't have an ID.
-     * @param  {[type]} trigger [description]
-     * @return {[type]}         [description]
-     */
-    static generateCustomToggleID(trigger) {
-        let randomString = Math.floor(new Date().getTime() * Math.random()).toString().substr(0, 4);
-
-        return `toggleID-${randomString}`;
+    getCustomAttributes(trigger) {
+        //`value`: [String | Array] If Array, index 0 is used when Toggle is unset, and index 1 is used when it's set.
+        //`trigger`: [Boolean] Set to true to only attach the attribute to the trigger element.
+        //`target`: [Boolean] Set to true to only attach the attribute to the target element.
+        return {
+            'aria-expanded': {
+                value: ['false', 'true']
+            },
+            'aria-describedby': {
+                value: trigger.id,
+                target: true
+            },
+            'aria-controls': {
+                value: trigger.toggle.targetEl.id,
+                trigger: true
+            },
+            'aria-haspopup': {
+                value: 'true',
+                trigger: true
+            }
+        };
     }
 
     /**
@@ -212,6 +200,17 @@ export default class Toggle{
             targetEl = document.querySelectorAll(targetSelector);
 
         return targetEl.length > 1 ? trigger.toggle.parentEl.querySelector(targetSelector) : targetEl[0];
+    }
+
+    /**
+     * Returns an optional focus target when triggering a Toggle.
+     * This is useful for ADA / ARIA flows.
+     */
+    _getTargetFocus(trigger) {
+        let targetFocus = trigger.toggle.options.targetFocus,
+            isSelector = typeof targetFocus === 'string';
+
+        return isSelector ? trigger.toggle.targetEl.querySelector(targetFocus) : (targetFocus ? trigger.toggle.targetEl : null);
     }
 
     _setupCallbacks(trigger) {
@@ -284,7 +283,7 @@ export default class Toggle{
             trigger.toggle.parentEl.classList.remove(trigger.toggle.options.activeClass);
             trigger.toggle.targetEl.classList.remove(trigger.toggle.options.activeClass);
 
-            trigger.toggle.targetEl.removeEventListener('click', Toggle.closeElCallback);
+            trigger.toggle.targetEl.removeEventListener('click', Toggle.closeElHandler);
 
             trigger.toggle.afterUnset(trigger);
 
@@ -317,29 +316,46 @@ export default class Toggle{
 
             Toggle.updateAttributes(trigger, true);
 
+            if (trigger.toggle.targetFocusEl) {
+                trigger.toggle.targetFocusEl.focus();
+            }
+
             //If 'options.persist' is false, attach an event listener to the body to unset the trigger.
             if (!trigger.toggle.options.persist) {
                 let bodyEvtType = triggerEvt.indexOf('touch') >= 0 ? triggerEvt : 'click',
-                    blurCallback = function(evt) {
+                    blurCloseHandler = function(evt) {
                         // Ugly, but it works. The reason we check for parentEl AND targetEl is
                         // cause sometimes the parentEl does not contain the targetEl, but only the trigger
                         if (!trigger.toggle.targetEl.contains(evt.target) && !trigger.toggle.parentEl.contains(evt.target) && evt.target !== trigger) {
-                            this.removeEventListener(bodyEvtType, blurCallback, true);
+                            this.removeEventListener(bodyEvtType, blurCloseHandler, true);
+
                             Toggle.unset(trigger);
                         }
                     };
 
-                document.body.addEventListener(bodyEvtType, blurCallback, true);
+                document.body.addEventListener(bodyEvtType, blurCloseHandler, true);
+
+                if (trigger.toggle.options.allowEscClose) {
+                    let escCloseHandler = function(evt) {
+                        if (evt.keyCode === 27) {
+                            this.removeEventListener('keydown', escCloseHandler);
+
+                            Toggle.unset(trigger);
+                        }
+                    };
+
+                    document.addEventListener('keydown', escCloseHandler);
+                }
             }
 
             //Hide content on hover out
             if (trigger.toggle.options.unsetOnHoverOut) {
-                let mouseLeaveCallback = function() {
-                    this.removeEventListener('mouseleave', mouseLeaveCallback);
+                let mouseLeaveHandler = function() {
+                    this.removeEventListener('mouseleave', mouseLeaveHandler);
                     Toggle.unset(trigger);
                 };
 
-                trigger.toggle.parentEl.addEventListener('mouseleave', mouseLeaveCallback);
+                trigger.toggle.parentEl.addEventListener('mouseleave', mouseLeaveHandler);
             }
 
             //Toggles the content off after 'timeout' has ellapsed.
@@ -348,13 +364,13 @@ export default class Toggle{
                 window.setTimeout(Toggle.unset.bind(this, trigger), trigger.toggle.options.timeout);
             }
 
-            trigger.toggle.targetEl.addEventListener('click', Toggle.closeElCallback);
+            trigger.toggle.targetEl.addEventListener('click', Toggle.closeElHandler);
 
             trigger.toggle.afterSet(trigger);
         }
     }
 
-    static closeElCallback(evt) {
+    static closeElHandler(evt) {
         let targetCloseEl = evt.target.closest(this.toggleTrigger.toggle.options.closeSelector),
             targetTriggerSelector = targetCloseEl && targetCloseEl.getAttribute('data-toggle-close') ? targetCloseEl.getAttribute('data-toggle-close') : null;
 
