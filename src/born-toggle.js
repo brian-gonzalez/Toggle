@@ -77,7 +77,7 @@ export default class Toggle{
                         && (!matchedBreakpoint.max || document.body.offsetWidth <= matchedBreakpoint.max)) {
                         Toggle.set(trigger);
                     } else {
-                        Toggle.unset(trigger);
+                        Toggle.unset(trigger, false);
                     }
                 }
             } else {
@@ -131,7 +131,7 @@ export default class Toggle{
             'aria-expanded': {
                 value: ['false', 'true']
             },
-            'aria-describedby': {
+            'aria-labelledby': {
                 value: trigger.id,
                 target: true
             },
@@ -264,7 +264,7 @@ export default class Toggle{
 
         if (trigger.classList.contains(trigger.toggle.options.activeClass)) {
             if (trigger.toggle.options.unsetSelf && evtType !== 'mouseenter') {
-                Toggle.unset(trigger, evt);
+                Toggle.unset(trigger, false);
             }
         }
 
@@ -276,8 +276,9 @@ export default class Toggle{
     /**
      * [unset] hides the target content and removes events from the body
      * @param  {[object]} trigger
+     * @param {Boolean} [focusTrigger] Wether or not to set focus on the trigger after the Toggle is unset.
      */
-    static unset(trigger) {
+    static unset(trigger, focusTrigger) {
         if (trigger.classList.contains(trigger.toggle.options.activeClass) && trigger.toggle.beforeUnset(trigger)) {
             trigger.classList.remove(trigger.toggle.options.activeClass);
             trigger.toggle.parentEl.classList.remove(trigger.toggle.options.activeClass);
@@ -290,6 +291,10 @@ export default class Toggle{
             trigger.toggle.isSet = false;
 
             Toggle.updateAttributes(trigger);
+
+            if (focusTrigger) {
+                trigger.focus();
+            }
         }
     }
 
@@ -329,7 +334,7 @@ export default class Toggle{
                         if (!trigger.toggle.targetEl.contains(evt.target) && !trigger.toggle.parentEl.contains(evt.target) && evt.target !== trigger) {
                             this.removeEventListener(bodyEvtType, blurCloseHandler, true);
 
-                            Toggle.unset(trigger);
+                            Toggle.unset(trigger, false);
                         }
                     };
 
@@ -340,7 +345,7 @@ export default class Toggle{
                         if (evt.keyCode === 27) {
                             this.removeEventListener('keydown', escCloseHandler);
 
-                            Toggle.unset(trigger);
+                            Toggle.unset(trigger, true);
                         }
                     };
 
@@ -352,7 +357,7 @@ export default class Toggle{
             if (trigger.toggle.options.unsetOnHoverOut) {
                 let mouseLeaveHandler = function() {
                     this.removeEventListener('mouseleave', mouseLeaveHandler);
-                    Toggle.unset(trigger);
+                    Toggle.unset(trigger, true);
                 };
 
                 trigger.toggle.parentEl.addEventListener('mouseleave', mouseLeaveHandler);
@@ -361,7 +366,7 @@ export default class Toggle{
             //Toggles the content off after 'timeout' has ellapsed.
             //Need to add option to reset timer when cursor is on trigger or its components
             if (trigger.toggle.options.timeout) {
-                window.setTimeout(Toggle.unset.bind(this, trigger), trigger.toggle.options.timeout);
+                window.setTimeout(Toggle.unset.bind(this, trigger, false), trigger.toggle.options.timeout);
             }
 
             trigger.toggle.targetEl.addEventListener('click', Toggle.closeElHandler);
@@ -375,7 +380,7 @@ export default class Toggle{
             targetTriggerSelector = targetCloseEl && targetCloseEl.getAttribute('data-toggle-close') ? targetCloseEl.getAttribute('data-toggle-close') : null;
 
         if (targetCloseEl && (this.toggleTrigger.matches(targetTriggerSelector) || !targetTriggerSelector)) {
-            Toggle.unset(this.toggleTrigger);
+            Toggle.unset(this.toggleTrigger, true);
         }
     }
 
@@ -393,7 +398,7 @@ export default class Toggle{
 
         [].forEach.call(activeTriggers, function(trigger) {
             if (trigger.toggle && !trigger.matches(skipSelector) && (!trigger.toggle.options.persist || trigger.matches(siblingSelector))) {
-                Toggle.unset(trigger);
+                Toggle.unset(trigger, false);
             }
         });
     }

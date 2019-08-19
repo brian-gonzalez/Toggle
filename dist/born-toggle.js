@@ -94,7 +94,7 @@ var Toggle = function () {
                         if (matchedBreakpoint && (!matchedBreakpoint.min || document.body.offsetWidth >= matchedBreakpoint.min) && (!matchedBreakpoint.max || document.body.offsetWidth <= matchedBreakpoint.max)) {
                             Toggle.set(trigger);
                         } else {
-                            Toggle.unset(trigger);
+                            Toggle.unset(trigger, false);
                         }
                     }
                 } else {
@@ -157,7 +157,7 @@ var Toggle = function () {
                 'aria-expanded': {
                     value: ['false', 'true']
                 },
-                'aria-describedby': {
+                'aria-labelledby': {
                     value: trigger.id,
                     target: true
                 },
@@ -324,7 +324,7 @@ var Toggle = function () {
 
             if (trigger.classList.contains(trigger.toggle.options.activeClass)) {
                 if (trigger.toggle.options.unsetSelf && evtType !== 'mouseenter') {
-                    Toggle.unset(trigger, evt);
+                    Toggle.unset(trigger, false);
                 }
             } else {
                 Toggle.set(trigger, evt, evtType);
@@ -334,11 +334,12 @@ var Toggle = function () {
         /**
          * [unset] hides the target content and removes events from the body
          * @param  {[object]} trigger
+         * @param {Boolean} [focusTrigger] Wether or not to set focus on the trigger after the Toggle is unset.
          */
 
     }, {
         key: 'unset',
-        value: function unset(trigger) {
+        value: function unset(trigger, focusTrigger) {
             if (trigger.classList.contains(trigger.toggle.options.activeClass) && trigger.toggle.beforeUnset(trigger)) {
                 trigger.classList.remove(trigger.toggle.options.activeClass);
                 trigger.toggle.parentEl.classList.remove(trigger.toggle.options.activeClass);
@@ -351,6 +352,10 @@ var Toggle = function () {
                 trigger.toggle.isSet = false;
 
                 Toggle.updateAttributes(trigger);
+
+                if (focusTrigger) {
+                    trigger.focus();
+                }
             }
         }
 
@@ -393,7 +398,7 @@ var Toggle = function () {
                         if (!trigger.toggle.targetEl.contains(evt.target) && !trigger.toggle.parentEl.contains(evt.target) && evt.target !== trigger) {
                             this.removeEventListener(bodyEvtType, blurCloseHandler, true);
 
-                            Toggle.unset(trigger);
+                            Toggle.unset(trigger, false);
                         }
                     };
 
@@ -404,7 +409,7 @@ var Toggle = function () {
                             if (evt.keyCode === 27) {
                                 this.removeEventListener('keydown', escCloseHandler);
 
-                                Toggle.unset(trigger);
+                                Toggle.unset(trigger, true);
                             }
                         };
 
@@ -416,7 +421,7 @@ var Toggle = function () {
                 if (trigger.toggle.options.unsetOnHoverOut) {
                     var mouseLeaveHandler = function mouseLeaveHandler() {
                         this.removeEventListener('mouseleave', mouseLeaveHandler);
-                        Toggle.unset(trigger);
+                        Toggle.unset(trigger, true);
                     };
 
                     trigger.toggle.parentEl.addEventListener('mouseleave', mouseLeaveHandler);
@@ -425,7 +430,7 @@ var Toggle = function () {
                 //Toggles the content off after 'timeout' has ellapsed.
                 //Need to add option to reset timer when cursor is on trigger or its components
                 if (trigger.toggle.options.timeout) {
-                    window.setTimeout(Toggle.unset.bind(this, trigger), trigger.toggle.options.timeout);
+                    window.setTimeout(Toggle.unset.bind(this, trigger, false), trigger.toggle.options.timeout);
                 }
 
                 trigger.toggle.targetEl.addEventListener('click', Toggle.closeElHandler);
@@ -440,7 +445,7 @@ var Toggle = function () {
                 targetTriggerSelector = targetCloseEl && targetCloseEl.getAttribute('data-toggle-close') ? targetCloseEl.getAttribute('data-toggle-close') : null;
 
             if (targetCloseEl && (this.toggleTrigger.matches(targetTriggerSelector) || !targetTriggerSelector)) {
-                Toggle.unset(this.toggleTrigger);
+                Toggle.unset(this.toggleTrigger, true);
             }
         }
 
@@ -460,7 +465,7 @@ var Toggle = function () {
 
             [].forEach.call(activeTriggers, function (trigger) {
                 if (trigger.toggle && !trigger.matches(skipSelector) && (!trigger.toggle.options.persist || trigger.matches(siblingSelector))) {
-                    Toggle.unset(trigger);
+                    Toggle.unset(trigger, false);
                 }
             });
         }
