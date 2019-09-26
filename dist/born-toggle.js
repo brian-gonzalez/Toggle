@@ -53,13 +53,14 @@ var Toggle = function () {
             trigger.toggle.options = this._getOptions(trigger);
             trigger.toggle.parentEl = this._getParent(trigger);
             trigger.toggle.targetEl = this._getTarget(trigger);
-            trigger.toggle.targetFocusEl = this._getTargetFocus(trigger);
 
             if (!trigger.toggle.targetEl) {
                 console.warn('No target provided or element not found for: ', trigger);
 
                 return false;
             }
+
+            trigger.toggle.targetFocusEl = this._getTargetFocus(trigger);
 
             trigger.id = triggerID;
             trigger.toggle.targetEl.id = trigger.toggle.targetEl.id || triggerID + '--target';
@@ -155,7 +156,8 @@ var Toggle = function () {
             //`target`: [Boolean] Set to true to only attach the attribute to the target element.
             return {
                 'aria-expanded': {
-                    value: ['false', 'true']
+                    value: ['false', 'true'],
+                    trigger: true
                 },
                 'aria-labelledby': {
                     value: trigger.id,
