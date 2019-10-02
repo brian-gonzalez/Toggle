@@ -1,4 +1,4 @@
-import {callbackOnElements, hasURLParameter, objectAssign} from '@borngroup/born-utilities';
+import {callbackOnElements, hasURLParameter, objectAssign, forceFocus} from '@borngroup/born-utilities';
 
 export default class Toggle{
     constructor(options) {
@@ -324,7 +324,7 @@ export default class Toggle{
             Toggle.updateAttributes(trigger, true);
 
             if (trigger.toggle.targetFocusEl) {
-                trigger.toggle.targetFocusEl.focus();
+                forceFocus(trigger.toggle.targetFocusEl);
             }
 
             //If 'options.persist' is false, attach an event listener to the body to unset the trigger.

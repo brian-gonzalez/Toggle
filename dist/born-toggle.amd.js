@@ -314,7 +314,7 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                     Toggle.updateAttributes(trigger, true);
 
                     if (trigger.toggle.targetFocusEl) {
-                        trigger.toggle.targetFocusEl.focus();
+                        (0, _bornUtilities.forceFocus)(trigger.toggle.targetFocusEl);
                     }
 
                     //If 'options.persist' is false, attach an event listener to the body to unset the trigger.
