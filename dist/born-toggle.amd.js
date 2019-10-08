@@ -81,9 +81,6 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
 
                 trigger.toggle.options.customAttributes = (0, _bornUtilities.objectAssign)(this.getCustomAttributes(trigger), trigger.toggle.options.customAttributes);
 
-                //Set an initial tabindex on the target trigger if none is present.
-                trigger.toggle.targetEl.tabIndex = trigger.toggle.targetEl.tabIndex || -1;
-
                 //Is this necessary?
                 trigger.toggle.targetEl.toggleTrigger = trigger;
 
