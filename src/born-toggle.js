@@ -48,9 +48,6 @@ export default class Toggle{
 
         trigger.toggle.options.customAttributes = objectAssign(this.getCustomAttributes(trigger), trigger.toggle.options.customAttributes);
 
-        //Is this necessary?
-        trigger.toggle.targetEl.toggleTrigger = trigger;
-
         this._setupCallbacks(trigger);
         this._setupMethods(trigger);
         this._setupHandlers(trigger);
@@ -265,9 +262,7 @@ export default class Toggle{
             if (trigger.toggle.options.unsetSelf && evtType !== 'mouseenter') {
                 Toggle.unset(trigger, false);
             }
-        }
-
-        else {
+        } else {
             Toggle.set(trigger, evt, evtType);
         }
     }
@@ -288,6 +283,8 @@ export default class Toggle{
             trigger.toggle.afterUnset(trigger);
 
             trigger.toggle.isSet = false;
+            //Remove the currently active trigger from this targetEl.
+            trigger.toggle.targetEl.currentTrigger = null;
 
             Toggle.updateAttributes(trigger);
 
@@ -317,6 +314,8 @@ export default class Toggle{
             trigger.toggle.targetEl.classList.add(trigger.toggle.options.activeClass);
 
             trigger.toggle.isSet = true;
+            //Set the currently active trigger for this targetEl.
+            trigger.toggle.targetEl.currentTrigger = trigger;
 
             Toggle.updateAttributes(trigger, true);
 
@@ -375,11 +374,11 @@ export default class Toggle{
     }
 
     static closeElHandler(evt) {
-        let targetCloseEl = evt.target.closest(this.toggleTrigger.toggle.options.closeSelector),
+        let targetCloseEl = evt.target.closest(this.currentTrigger.toggle.options.closeSelector),
             targetTriggerSelector = targetCloseEl && targetCloseEl.getAttribute('data-toggle-close') ? targetCloseEl.getAttribute('data-toggle-close') : null;
 
-        if (targetCloseEl && (this.toggleTrigger.matches(targetTriggerSelector) || !targetTriggerSelector)) {
-            Toggle.unset(this.toggleTrigger, true);
+        if (targetCloseEl && (this.currentTrigger.matches(targetTriggerSelector) || !targetTriggerSelector)) {
+            Toggle.unset(this.currentTrigger, true);
         }
     }
 

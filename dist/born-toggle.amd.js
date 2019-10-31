@@ -81,9 +81,6 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
 
                 trigger.toggle.options.customAttributes = (0, _bornUtilities.objectAssign)(this.getCustomAttributes(trigger), trigger.toggle.options.customAttributes);
 
-                //Is this necessary?
-                trigger.toggle.targetEl.toggleTrigger = trigger;
-
                 this._setupCallbacks(trigger);
                 this._setupMethods(trigger);
                 this._setupHandlers(trigger);
@@ -284,6 +281,8 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                     trigger.toggle.afterUnset(trigger);
 
                     trigger.toggle.isSet = false;
+                    //Remove the currently active trigger from this targetEl.
+                    trigger.toggle.targetEl.currentTrigger = null;
 
                     Toggle.updateAttributes(trigger);
 
@@ -307,6 +306,8 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                     trigger.toggle.targetEl.classList.add(trigger.toggle.options.activeClass);
 
                     trigger.toggle.isSet = true;
+                    //Set the currently active trigger for this targetEl.
+                    trigger.toggle.targetEl.currentTrigger = trigger;
 
                     Toggle.updateAttributes(trigger, true);
 
@@ -366,11 +367,11 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
         }, {
             key: 'closeElHandler',
             value: function closeElHandler(evt) {
-                var targetCloseEl = evt.target.closest(this.toggleTrigger.toggle.options.closeSelector),
+                var targetCloseEl = evt.target.closest(this.currentTrigger.toggle.options.closeSelector),
                     targetTriggerSelector = targetCloseEl && targetCloseEl.getAttribute('data-toggle-close') ? targetCloseEl.getAttribute('data-toggle-close') : null;
 
-                if (targetCloseEl && (this.toggleTrigger.matches(targetTriggerSelector) || !targetTriggerSelector)) {
-                    Toggle.unset(this.toggleTrigger, true);
+                if (targetCloseEl && (this.currentTrigger.matches(targetTriggerSelector) || !targetTriggerSelector)) {
+                    Toggle.unset(this.currentTrigger, true);
                 }
             }
         }, {
