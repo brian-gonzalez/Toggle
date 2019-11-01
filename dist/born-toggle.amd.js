@@ -152,10 +152,6 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                     'aria-controls': {
                         value: trigger.toggle.targetEl.id,
                         trigger: true
-                    },
-                    'aria-haspopup': {
-                        value: 'true',
-                        trigger: true
                     }
                 };
             }

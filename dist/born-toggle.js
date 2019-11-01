@@ -160,10 +160,6 @@ var Toggle = function () {
                 'aria-controls': {
                     value: trigger.toggle.targetEl.id,
                     trigger: true
-                },
-                'aria-haspopup': {
-                    value: 'true',
-                    trigger: true
                 }
             };
         }
