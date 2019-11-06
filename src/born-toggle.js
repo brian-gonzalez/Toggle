@@ -1,4 +1,4 @@
-import {callbackOnElements, hasURLParameter, objectAssign, forceFocus} from '@borngroup/born-utilities';
+import {callbackOnElements, hasURLParameter, objectAssign, forceFocus, focusTrap} from '@borngroup/born-utilities';
 
 export default class Toggle{
     constructor(options) {
@@ -361,6 +361,11 @@ export default class Toggle{
             //Need to add option to reset timer when cursor is on trigger or its components
             if (trigger.toggle.options.timeout) {
                 window.setTimeout(Toggle.unset.bind(this, trigger, false), trigger.toggle.options.timeout);
+            }
+
+            //Trap focus within the target element.
+            if (trigger.toggle.options.focusTrap) {
+                focusTrap(trigger.toggle.targetEl);
             }
 
             trigger.toggle.targetEl.addEventListener('click', Toggle.closeElHandler);

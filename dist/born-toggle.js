@@ -429,6 +429,11 @@ var Toggle = function () {
                     window.setTimeout(Toggle.unset.bind(this, trigger, false), trigger.toggle.options.timeout);
                 }
 
+                //Trap focus within the target element.
+                if (trigger.toggle.options.focusTrap) {
+                    (0, _bornUtilities.focusTrap)(trigger.toggle.targetEl);
+                }
+
                 trigger.toggle.targetEl.addEventListener('click', Toggle.closeElHandler);
 
                 trigger.toggle.afterSet(trigger);
