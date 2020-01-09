@@ -2,14 +2,16 @@
   "name": "@borngroup/born-toggle",
   "version": "3.5.8",
   "description": "Toggle DOM elements' state and manage content display, interface changes, and more.",
+  "author": "BORN Group Frontend Team fed@borngroup.com",
+  "license": "ISC",
   "main": "dist/born-toggle.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "npm run build",
     "build": "npm-run-all build:*",
     "build:commonjs": "babel src/born-toggle.js --out-file dist/born-toggle.js",
-    "build:amd": "babel --plugins @babel/plugin-transform-modules-amd src/born-toggle.js --out-file dist/born-toggle.amd.js",
-    "build:umd": "babel --plugins @babel/plugin-transform-modules-umd src/born-toggle.js --out-file dist/born-toggle.umd.js",
+    "build:amd": "babel --plugins transform-es2015-modules-amd src/born-toggle.js --out-file dist/born-toggle.amd.js",
+    "build:umd": "babel --plugins transform-es2015-modules-umd src/born-toggle.js --out-file dist/born-toggle.umd.js",
     "uglify:commonjs": "uglifyjs dist/born-toggle.js --output dist/born-toggle.min.js",
     "uglify:amd": "uglifyjs dist/born-toggle.amd.js --output dist/born-toggle.amd.min.js",
     "uglify:umd": "uglifyjs dist/born-toggle.umd.js --output dist/born-toggle.umd.min.js",
@@ -25,18 +27,16 @@
     "state",
     "change"
   ],
-  "author": "BORN Group Frontend Team fed@borngroup.com",
-  "license": "ISC",
   "dependencies": {
     "@borngroup/born-utilities": "^2.5.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.7.0",
-    "@babel/core": "^7.7.2",
-    "@babel/plugin-transform-modules-amd": "^7.5.0",
-    "@babel/plugin-transform-modules-umd": "^7.7.4",
-    "@babel/preset-env": "^7.7.1",
-    "npm-run-all": "^4.1.5",
-    "uglify-js": "^3.6.8"
+    "babel-cli": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-amd": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-env": "^1.6.0",
+    "npm-run-all": "^4.0.2",
+    "uglify-js": "^3.0.15"
   }
 }
