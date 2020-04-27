@@ -125,7 +125,7 @@ var Toggle = function () {
         key: '_getOptions',
         value: function _getOptions(trigger) {
             var triggerOptionsString = trigger.getAttribute(this.options.dataAttribute),
-                triggerOptions = (0, _bornUtilities.objectAssign)({}, this.options, triggerOptionsString ? JSON.parse(triggerOptionsString) : {});
+                triggerOptions = (0, _bornUtilities.objectAssign)({}, this.options, triggerOptionsString ? this._safeJSONParse(triggerOptionsString) : {});
 
             triggerOptions.closeSelector = triggerOptions.closeSelector || '[data-toggle-close]';
             triggerOptions.activeClass = triggerOptions.activeClass || 'toggle--active';
@@ -133,6 +133,20 @@ var Toggle = function () {
             triggerOptions.allowEscClose = triggerOptions.hasOwnProperty('allowEscClose') ? triggerOptions.allowEscClose : true;
 
             return triggerOptions;
+        }
+
+        /**
+         * Safe JSON parse prevents erroring out the plugin.
+         */
+
+    }, {
+        key: '_safeJSONParse',
+        value: function _safeJSONParse(JSONString) {
+            try {
+                return JSON.parse(JSONString);
+            } catch (e) {
+                return {};
+            }
         }
 
         /**
