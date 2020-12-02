@@ -20,6 +20,7 @@ Adds the ability to toggle a class when an event is triggered, can be setup to l
 |skipSelector|`Query String`|N/A|If `persist` is set to `false`, setting a `Trigger` will cause all other triggers to unset. Specify a selector to skip matching triggers.
 |unsetOnHoverOut|`Boolean`|false| Unsets the `Trigger` when hovering out.
 |unsetSelf|`Boolean`|true|Enable or disable the `Trigger` from unsetting itself.
+|unsetOthers|`Boolean`|true|Enable or disable the `Trigger` from unsetting all other toggles (except those with `persist` set to `TRUE`) when triggered.
 |timeout|Integer (milliseconds)|0|Unsets the `Trigger` after `timeout` milliseconds.
 
 

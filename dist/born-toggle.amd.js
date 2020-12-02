@@ -130,6 +130,7 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 triggerOptions.closeSelector = triggerOptions.closeSelector || '[data-toggle-close]';
                 triggerOptions.activeClass = triggerOptions.activeClass || 'toggle--active';
                 triggerOptions.unsetSelf = triggerOptions.hasOwnProperty('unsetSelf') ? triggerOptions.unsetSelf : true;
+                triggerOptions.unsetOthers = triggerOptions.hasOwnProperty('unsetOthers') ? triggerOptions.unsetOthers : true;
                 triggerOptions.allowEscClose = triggerOptions.hasOwnProperty('allowEscClose') ? triggerOptions.allowEscClose : true;
 
                 return triggerOptions;
@@ -302,8 +303,8 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 var triggerEvt = evtType || '';
 
                 if (trigger.toggle.beforeSet(trigger, evt)) {
-                    if (trigger.toggle.beforeUnsetAll(trigger)) {
-                        Toggle.unsetAll(trigger, trigger.toggle.options.siblingSelector);
+                    if (trigger.toggle.beforeUnsetAll(trigger) && trigger.toggle.options.unsetOthers) {
+                        Toggle.unsetAll(trigger);
                     }
 
                     trigger.classList.add(trigger.toggle.options.activeClass);

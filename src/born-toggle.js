@@ -107,6 +107,7 @@ export default class Toggle{
         triggerOptions.closeSelector = triggerOptions.closeSelector || '[data-toggle-close]';
         triggerOptions.activeClass = triggerOptions.activeClass || 'toggle--active';
         triggerOptions.unsetSelf = triggerOptions.hasOwnProperty('unsetSelf') ? triggerOptions.unsetSelf : true;
+        triggerOptions.unsetOthers = triggerOptions.hasOwnProperty('unsetOthers') ? triggerOptions.unsetOthers : true;
         triggerOptions.allowEscClose = triggerOptions.hasOwnProperty('allowEscClose') ? triggerOptions.allowEscClose : true;
 
         return triggerOptions;
@@ -312,8 +313,8 @@ export default class Toggle{
         let triggerEvt = evtType || '';
 
         if (trigger.toggle.beforeSet(trigger, evt)) {
-            if (trigger.toggle.beforeUnsetAll(trigger)) {
-                Toggle.unsetAll(trigger, trigger.toggle.options.siblingSelector);
+            if (trigger.toggle.beforeUnsetAll(trigger) && trigger.toggle.options.unsetOthers) {
+                Toggle.unsetAll(trigger);
             }
 
             trigger.classList.add(trigger.toggle.options.activeClass);
@@ -395,7 +396,7 @@ export default class Toggle{
     }
 
     /**
-     * Unsets all active items, unless the item has the 'persistent' option set to true. 
+     * Unsets all active items, unless the item has the 'persist' option set to true.
      * If in addition they have a 'siblingSelector' set, the elements matching said class
      * will be unset when a trigger with the same 'siblingSelector' is actioned on.
      */
