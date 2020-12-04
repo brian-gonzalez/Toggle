@@ -254,6 +254,10 @@ var Toggle = function () {
             trigger.toggle.toggle = Toggle.toggle.bind(this, trigger);
             trigger.toggle.set = Toggle.set.bind(this, trigger);
             trigger.toggle.unset = Toggle.unset.bind(this, trigger);
+
+            trigger.addEventListener('toggle:toggle', Toggle.toggle.bind(this, trigger));
+            trigger.addEventListener('toggle:set', Toggle.set.bind(this, trigger));
+            trigger.addEventListener('toggle:unset', Toggle.unset.bind(this, trigger));
         }
 
         /**
@@ -347,6 +351,8 @@ var Toggle = function () {
     }, {
         key: 'unset',
         value: function unset(trigger, focusTrigger) {
+            Toggle.publishToggleEvents(trigger, 'beforeUnset');
+
             if (trigger.classList.contains(trigger.toggle.options.activeClass) && trigger.toggle.beforeUnset(trigger)) {
                 trigger.classList.remove(trigger.toggle.options.activeClass);
                 trigger.toggle.parentEl.classList.remove(trigger.toggle.options.activeClass);
@@ -355,6 +361,8 @@ var Toggle = function () {
                 trigger.toggle.targetEl.removeEventListener('click', Toggle.closeElHandler);
 
                 trigger.toggle.afterUnset(trigger);
+
+                Toggle.publishToggleEvents(trigger, 'afterUnset');
 
                 trigger.toggle.isSet = false;
                 //Remove the currently active trigger from this targetEl.
@@ -381,7 +389,11 @@ var Toggle = function () {
         value: function set(trigger, evt, evtType) {
             var triggerEvt = evtType || '';
 
+            Toggle.publishToggleEvents(trigger, 'beforeSet');
+
             if (trigger.toggle.beforeSet(trigger, evt)) {
+                Toggle.publishToggleEvents(trigger, 'beforeUnsetAll');
+
                 if (trigger.toggle.beforeUnsetAll(trigger) && trigger.toggle.options.unsetOthers) {
                     Toggle.unsetAll(trigger);
                 }
@@ -451,6 +463,8 @@ var Toggle = function () {
 
                 trigger.toggle.targetEl.addEventListener('click', Toggle.closeElHandler);
 
+                Toggle.publishToggleEvents(trigger, 'afterSet');
+
                 trigger.toggle.afterSet(trigger);
             }
         }
@@ -484,6 +498,73 @@ var Toggle = function () {
                     Toggle.unset(trigger, false);
                 }
             });
+        }
+
+        /**
+         * Return a standard event data object which is used by all of the fired events in the plugin.
+         * @param  {[type]} trigger        [description]
+         * @param  {Object} additionalData [description]
+         */
+
+    }, {
+        key: 'getEventData',
+        value: function getEventData(trigger) {
+            var additionalData = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+            return (0, _bornUtilities.objectAssign)({
+                trigger: trigger,
+                targetEl: trigger.toggle.targetEl,
+                parentEl: trigger.toggle.parentEl,
+                toggleOptions: trigger.toggle.options
+            }, additionalData);
+        }
+
+        /**
+         * Publishes Toggle events for both pre-set events (afterSet, beforeSet, afterUnset, etc.) and also custom events configured at initialization time.
+         * Thse events can be listened to using Node.addEventListener();
+         * @param  {[type]} eventType [description]
+         */
+
+    }, {
+        key: 'publishToggleEvents',
+        value: function publishToggleEvents(trigger, eventType) {
+            //Publish a pre-set event using a naming format of `toggle:<eventName>`, for example: "toggle:afterSet".
+            Toggle.publishEvent('toggle', eventType, trigger, Toggle.getEventData(trigger));
+
+            //If a custom event was provided, fire it now.
+            //These events match the pre-set event types, however a custom event name can be assed instead, as well as custom data.
+            if (trigger.toggle.options.customEvents && trigger.toggle.options.customEvents[eventType]) {
+                Toggle.publishEvent(null, trigger.toggle.options.customEvents[eventType].name, trigger, Toggle.getEventData(trigger, trigger.toggle.options.customEvents[eventType].data));
+            }
+        }
+
+        /**
+         * Publish an event at the specific target element scope
+         * for other modules to subscribe.
+         * The subscribe method can be a standard
+         * .addEventListener('moduleName.eventName') method
+         *
+         * @param {String} moduleName
+         * @param {String} eventName
+         * @param {HTMLElement} target
+         */
+
+    }, {
+        key: 'publishEvent',
+        value: function publishEvent(moduleName, eventName, target, detail) {
+            var event = void 0,
+                params = { bubbles: true, cancelable: true, detail: detail },
+                eventString = moduleName && eventName ? moduleName + ':' + eventName : moduleName || eventName;
+
+            // IE >= 9, CustomEvent() constructor does not exist
+            if (typeof window.CustomEvent !== 'function') {
+                event = document.createEvent('CustomEvent');
+                event.initCustomEvent(eventString, params.bubbles, params.cancelable, null);
+            } else {
+                event = new CustomEvent(eventString, params);
+            }
+
+            target.dispatchEvent(event);
         }
     }]);
 
