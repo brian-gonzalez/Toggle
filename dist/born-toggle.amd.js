@@ -209,8 +209,14 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
             key: '_setupMethods',
             value: function _setupMethods(trigger) {
                 trigger.toggle.toggle = Toggle.toggle.bind(this, trigger);
+                trigger.toggle.persist = Toggle.persist.bind(this, trigger);
+
                 trigger.toggle.set = Toggle.set.bind(this, trigger);
                 trigger.toggle.unset = Toggle.unset.bind(this, trigger);
+                trigger.toggle.unsetOnEscKey = Toggle.unsetOnEscKey.bind(this, trigger);
+                trigger.toggle.unsetOnTimeout = Toggle.unsetOnTimeout.bind(this, trigger);
+                trigger.toggle.unsetOnClickOut = Toggle.unsetOnClickOut.bind(this, trigger);
+                trigger.toggle.unsetOnMouseLeave = Toggle.unsetOnMouseLeave.bind(this, trigger);
 
                 trigger.addEventListener('toggle:toggle', Toggle.toggle.bind(this, trigger));
                 trigger.addEventListener('toggle:set', Toggle.set.bind(this, trigger));
@@ -224,6 +230,10 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 evtType.forEach(function (currentEvt) {
                     trigger.addEventListener(currentEvt, Toggle.toggleEventHandler);
                 }.bind(this));
+
+                //Create a scope to store any "Temporaty Handlers".
+                //These are handlers that are only attached at certain times, i.e. after Toggle is `set()`, and removed after the event is fulfilled.
+                trigger.toggle.tempHandlers = trigger.toggle.tempHandlers || {};
             }
         }], [{
             key: 'updateAttributes',
@@ -288,7 +298,7 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                     trigger.toggle.parentEl.classList.remove(trigger.toggle.options.activeClass);
                     trigger.toggle.targetEl.classList.remove(trigger.toggle.options.activeClass);
 
-                    trigger.toggle.targetEl.removeEventListener('click', Toggle.closeElHandler);
+                    trigger.toggle.targetEl.removeEventListener('click', Toggle.unsetOnTriggerHandler);
 
                     trigger.toggle.afterUnset(trigger);
 
@@ -307,9 +317,7 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
             }
         }, {
             key: 'set',
-            value: function set(trigger, evt, evtType) {
-                var triggerEvt = evtType || '';
-
+            value: function set(trigger, evt) {
                 Toggle.publishToggleEvents(trigger, 'beforeSet');
 
                 if (trigger.toggle.beforeSet(trigger, evt)) {
@@ -335,54 +343,21 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
 
                     //If 'options.persist' is false, attach an event listener to the body to unset the trigger.
                     if (!trigger.toggle.options.persist) {
-                        var bodyEvtType = triggerEvt.indexOf('touch') >= 0 ? triggerEvt : 'click',
-                            blurCloseHandler = function blurCloseHandler(evt) {
-                            // Ugly, but it works. The reason we check for parentEl AND targetEl is
-                            // cause sometimes the parentEl does not contain the targetEl, but only the trigger
-                            if (!trigger.toggle.targetEl.contains(evt.target) && !trigger.toggle.parentEl.contains(evt.target) && evt.target !== trigger) {
-                                this.removeEventListener(bodyEvtType, blurCloseHandler, true);
+                        Toggle.unsetOnClickOut(trigger, !trigger.toggle.options.persist);
 
-                                Toggle.unset(trigger, false);
-                            }
-                        };
+                        Toggle.unsetOnEscKey(trigger, trigger.toggle.options.allowEscClose);
 
-                        document.body.addEventListener(bodyEvtType, blurCloseHandler, true);
-
-                        if (trigger.toggle.options.allowEscClose) {
-                            var escCloseHandler = function escCloseHandler(evt) {
-                                if (evt.keyCode === 27) {
-                                    this.removeEventListener('keydown', escCloseHandler);
-
-                                    Toggle.unset(trigger, true);
-                                }
-                            };
-
-                            document.addEventListener('keydown', escCloseHandler);
-                        }
+                        Toggle.unsetOnMouseLeave(trigger, trigger.toggle.options.unsetOnHoverOut);
                     }
 
-                    //Hide content on hover out
-                    if (trigger.toggle.options.unsetOnHoverOut) {
-                        var mouseLeaveHandler = function mouseLeaveHandler() {
-                            this.removeEventListener('mouseleave', mouseLeaveHandler);
-                            Toggle.unset(trigger, true);
-                        };
-
-                        trigger.toggle.parentEl.addEventListener('mouseleave', mouseLeaveHandler);
-                    }
-
-                    //Toggles the content off after 'timeout' has ellapsed.
-                    //Need to add option to reset timer when cursor is on trigger or its components
-                    if (trigger.toggle.options.timeout) {
-                        window.setTimeout(Toggle.unset.bind(this, trigger, false), trigger.toggle.options.timeout);
-                    }
+                    Toggle.unsetOnTimeout(trigger, trigger.toggle.options.timeout);
 
                     //Trap focus within the target element.
                     if (trigger.toggle.options.focusTrap) {
                         (0, _bornUtilities.focusTrap)(trigger.toggle.targetEl);
                     }
 
-                    trigger.toggle.targetEl.addEventListener('click', Toggle.closeElHandler);
+                    trigger.toggle.targetEl.addEventListener('click', Toggle.unsetOnTriggerHandler);
 
                     Toggle.publishToggleEvents(trigger, 'afterSet');
 
@@ -390,8 +365,17 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 }
             }
         }, {
-            key: 'closeElHandler',
-            value: function closeElHandler(evt) {
+            key: 'persist',
+            value: function persist(trigger, isEnabled) {
+                Toggle.unsetOnClickOut(trigger, !isEnabled);
+
+                Toggle.unsetOnEscKey(trigger, !isEnabled);
+
+                Toggle.unsetOnMouseLeave(trigger, !isEnabled);
+            }
+        }, {
+            key: 'unsetOnTriggerHandler',
+            value: function unsetOnTriggerHandler(evt) {
                 var targetCloseEl = evt.target.closest(this.currentTrigger.toggle.options.closeSelector),
                     targetTriggerSelector = targetCloseEl && targetCloseEl.getAttribute('data-toggle-close') ? targetCloseEl.getAttribute('data-toggle-close') : null;
 
@@ -400,16 +384,78 @@ define(['exports', '@borngroup/born-utilities'], function (exports, _bornUtiliti
                 }
             }
         }, {
+            key: 'unsetOnTimeout',
+            value: function unsetOnTimeout(trigger, timeout) {
+                if (timeout) {
+                    window.setTimeout(Toggle.unset.bind(this, trigger, false), timeout);
+                }
+            }
+        }, {
+            key: 'unsetOnClickOut',
+            value: function unsetOnClickOut(trigger, isEnabled) {
+                //When enabled, the body should have an event to unset the Toggle.
+                if (isEnabled) {
+                    //This next line was used to detect if the event was touch-related, but I don't think it's necessary anymore.
+                    // let bodyEvtType = evtType.indexOf('touch') >= 0 ? evtType : 'click';
+
+                    trigger.toggle.tempHandlers.unsetOnClickOut = trigger.toggle.tempHandlers.unsetOnClickOut || function (evt) {
+                        // Ugly, but it works. The reason we check for parentEl AND targetEl is
+                        // cause sometimes the parentEl does not contain the targetEl, but only the trigger
+                        if (!trigger.toggle.targetEl.contains(evt.target) && !trigger.toggle.parentEl.contains(evt.target) && evt.target !== trigger) {
+                            this.removeEventListener('click', trigger.toggle.tempHandlers.unsetOnClickOut, true);
+
+                            Toggle.unset(trigger, false);
+                        }
+                    };
+
+                    document.body.addEventListener('click', trigger.toggle.tempHandlers.unsetOnClickOut, true);
+                } else {
+                    document.body.removeEventListener('click', trigger.toggle.tempHandlers.unsetOnClickOut, true);
+                }
+            }
+        }, {
+            key: 'unsetOnEscKey',
+            value: function unsetOnEscKey(trigger, isEnabled) {
+                if (isEnabled) {
+                    trigger.toggle.tempHandlers.unsetOnEscKey = trigger.toggle.tempHandlers.unsetOnEscKey || function (evt) {
+                        if (evt.keyCode === 27) {
+                            this.removeEventListener('keydown', trigger.toggle.tempHandlers.unsetOnEscKey);
+
+                            Toggle.unset(trigger, true);
+                        }
+                    };
+
+                    document.addEventListener('keydown', trigger.toggle.tempHandlers.unsetOnEscKey);
+                } else {
+                    document.removeEventListener('keydown', trigger.toggle.tempHandlers.unsetOnEscKey);
+                }
+            }
+        }, {
+            key: 'unsetOnMouseLeave',
+            value: function unsetOnMouseLeave(trigger, isEnabled) {
+                if (isEnabled) {
+                    trigger.toggle.tempHandlers.unsetOnMouseLeave = trigger.toggle.tempHandlers.unsetOnMouseLeave || function () {
+                        this.removeEventListener('mouseleave', trigger.toggle.tempHandlers.unsetOnMouseLeave);
+
+                        Toggle.unset(trigger, true);
+                    };
+
+                    trigger.toggle.parentEl.addEventListener('mouseleave', trigger.toggle.tempHandlers.unsetOnMouseLeave);
+                } else {
+                    trigger.toggle.parentEl.removeEventListener('mouseleave', trigger.toggle.tempHandlers.unsetOnMouseLeave);
+                }
+            }
+        }, {
             key: 'unsetAll',
-            value: function unsetAll(refTrigger) {
-                var activeClass = refTrigger.toggle.options.activeClass,
-                    siblingSelector = refTrigger.toggle.options.siblingSelector,
-                    skipSelector = refTrigger.toggle.options.skipSelector,
+            value: function unsetAll(trigger) {
+                var activeClass = trigger.toggle.options.activeClass,
+                    siblingSelector = trigger.toggle.options.siblingSelector,
+                    skipSelector = trigger.toggle.options.skipSelector,
                     activeTriggers = document.querySelectorAll('.' + activeClass);
 
-                [].forEach.call(activeTriggers, function (trigger) {
-                    if (trigger.toggle && !trigger.matches(skipSelector) && (!trigger.toggle.options.persist || trigger.matches(siblingSelector))) {
-                        Toggle.unset(trigger, false);
+                [].forEach.call(activeTriggers, function (currentTrigger) {
+                    if (currentTrigger.toggle && !currentTrigger.matches(skipSelector) && (!currentTrigger.toggle.options.persist || currentTrigger.matches(siblingSelector))) {
+                        Toggle.unset(currentTrigger, false);
                     }
                 });
             }
