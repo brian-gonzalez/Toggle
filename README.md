@@ -1,14 +1,14 @@
 
 
 # Description
-	
+
 Adds the ability to toggle a class when an event is triggered, can be setup to look for a `data-toggle` attribute to hold the configurations for the trigger. Does not use jQuery.
 
 ## Options
 
 |Property|Type|Default|Description|
 |--|--|--|--|
-|trigger / triggers| `Query String` `NodeList` `HTMLElement` | N/A |**REQUIRED**. Provide either a query selector, a NodeList, or an HTML element to use as the `Trigger`.
+|trigger / triggers| `Query String` `NodeList` `HTMLElement` | Element with `data-toggle` attribute |Provide either a query selector, a NodeList, or an HTML element to use as the `Trigger`.
 |target| `Query String` | N/A | **REQUIRED**. Query selector for the target element.
 |activeClass| `String` | toggle--active | Custom class name.
 |parent| `Query String` | Closest `parentNode` element of the `Trigger`. | Selector query for the parent element.
@@ -35,7 +35,7 @@ Adds the ability to toggle a class when an event is triggered, can be setup to l
 
 
 ## Methods
-	
+
 **toggle()**: Set or unsets the toggle.
 
 **set()**: Sets the toggle.
