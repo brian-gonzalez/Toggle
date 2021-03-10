@@ -109,6 +109,8 @@ export default class Toggle{
         triggerOptions.unsetSelf = triggerOptions.hasOwnProperty('unsetSelf') ? triggerOptions.unsetSelf : true;
         triggerOptions.unsetOthers = triggerOptions.hasOwnProperty('unsetOthers') ? triggerOptions.unsetOthers : true;
         triggerOptions.allowEscClose = triggerOptions.hasOwnProperty('allowEscClose') ? triggerOptions.allowEscClose : true;
+        triggerOptions.allowSet = triggerOptions.hasOwnProperty('allowSet') ? triggerOptions.allowSet : true;
+        triggerOptions.allowUnset = triggerOptions.hasOwnProperty('allowUnset') ? triggerOptions.allowUnset : true;
 
         return triggerOptions;
     }
@@ -297,7 +299,7 @@ export default class Toggle{
     static unset(trigger, focusTrigger) {
         Toggle.publishToggleEvents(trigger, 'beforeUnset');
 
-        if (trigger.classList.contains(trigger.toggle.options.activeClass) && trigger.toggle.beforeUnset(trigger)) {
+        if (trigger.classList.contains(trigger.toggle.options.activeClass) && trigger.toggle.beforeUnset(trigger) && trigger.toggle.options.allowUnset) {
             trigger.classList.remove(trigger.toggle.options.activeClass);
             trigger.toggle.parentEl.classList.remove(trigger.toggle.options.activeClass);
             trigger.toggle.targetEl.classList.remove(trigger.toggle.options.activeClass);
@@ -329,7 +331,7 @@ export default class Toggle{
     static set(trigger, evt) {
         Toggle.publishToggleEvents(trigger, 'beforeSet');
 
-        if (trigger.toggle.beforeSet(trigger, evt)) {
+        if (trigger.toggle.beforeSet(trigger, evt) && trigger.toggle.options.allowSet) {
             Toggle.publishToggleEvents(trigger, 'beforeUnsetAll');
 
             if (trigger.toggle.beforeUnsetAll(trigger) && trigger.toggle.options.unsetOthers) {
